@@ -1,264 +1,260 @@
-# SupportPilot AI — Cost-Aware RAG Support Copilot
+# SupportPilot — Cost-Aware RAG Support Copilot
 
-A small, fully-working AI application that answers customer-support questions by
-retrieving relevant passages from uploaded documents (RAG), routes each question to
-a cheaper or stronger LLM based on complexity, tracks (simulated) cost and real
-latency for every request, enforces a spending budget, and evaluates itself against
-a fixed test set.
+A cost-aware customer support AI application built with RAG, intelligent LLM routing, budget control, monitoring, and automated evaluation.
 
-**Runs entirely on free tiers — $0 to build, run, or demo.** Groq and Google
-Gemini both offer genuinely free API keys (no credit card), and embeddings run
-locally on your own CPU with an open-source model, so there's no billing
-relationship with anyone required to use this project at all.
+## 1. ✨ Features
 
-Built as an interview-ready portfolio project — every design decision below is one
-I can explain and defend, not just a checklist of buzzwords.
+- **RAG-based Support:** Retrieves relevant information from uploaded documents before generating answers.
+- **LLM-Based Routing:** Uses Qwen on Groq to classify queries as `SIMPLE` or `COMPLEX`, routing them to an appropriate model.
+- **Cost-Aware Inference:** Tracks estimated inference costs and enforces a configurable session budget.
+- **Budget Fallback:** Automatically downgrades to the cheaper model when the stronger model would exceed the remaining budget.
+- **Monitoring:** Logs model selection, routing reason, token usage, estimated cost, latency, and request status.
+-  **Evaluation:** Includes 25 test cases covering factual queries, multi-context questions, ambiguous inputs, hallucination traps, and edge cases.
+- **Grounded Generation:** Answers are restricted to retrieved document context to reduce hallucination.
 
----
+## 2. 🏗️ Architecture
 
-## 1. Problem
-
-Naively wiring an LLM directly to a chat UI has two problems for a real support
-tool: (1) it will confidently make things up (hallucinate) when it doesn't actually
-know something, and (2) if you always call your most powerful (most expensive)
-model for every question — including trivial ones — costs scale linearly with
-traffic for no quality benefit on the easy questions.
-
-## 2. Solution
-
-- **RAG (Retrieval-Augmented Generation)**: answers are grounded in the user's own
-  uploaded documents, with retrieved sources shown alongside every answer, and the
-  model is explicitly instructed to say "I don't know" rather than invent facts.
-- **Cost-aware model routing**: a lightweight rule-based classifier sends simple,
-  single-fact questions to a fast free model on Groq (`llama-3.1-8b-instant`) and
-  reserves a stronger free model on Google Gemini (`gemini-flash-latest`) for
-  questions that need multi-step reasoning or synthesis.
-- **Budget enforcement**: before any expensive call, the app checks whether it
-  would exceed a configurable session budget, and gracefully downgrades to the
-  cheap model instead of blocking the user.
-- **Observability**: every request logs tokens, cost, latency, and success/failure
-  to a CSV, visualized in a live dashboard.
-- **Evaluation harness**: a fixed set of 25 test questions (including
-  hallucination traps and unanswerable questions) is run through the real
-  pipeline to produce repeatable quality metrics — not just "it looked fine when I
-  tried it."
-
-## 3. Architecture
-
-```
-                 User
-                   |
-             Streamlit UI (app.py)
-                   |
-       ┌───────────┼────────────┐
-       |           |            |
-  Document      Question     Evaluation
-  Upload        Asked        Harness
-       |           |            |
-   Load→Split   Retriever   (reuses the
-   →Embed       (vector       same
-   →Store       search,       pipeline
-   (Chroma)     top-k)        below)
-       |           |
-       └─────┬─────┘
-             |
-      Query Router (rule-based:
-      cheap vs strong model)
-             |
-      Budget Check (downgrade
-      if over session limit)
-             |
-      Selected LLM + Context
-      → Answer + Sources
-             |
-      Logger (CSV: tokens,
-      cost, latency, success)
-             |
-      Cost / Latency Dashboard
+```text
+                         User
+                           |
+                           v
+                    Streamlit UI
+                           |
+              +------------+------------+
+              |            |            |
+              v            v            v
+        Document       Question      Evaluation
+         Upload          Asked         Suite
+              |            |
+              v            v
+        Load → Split    Retriever
+        → Embed         (Chroma)
+        → Store            |
+              |             |
+              +------+------+
+                     |
+                     v
+              Qwen LLM Router
+                (Groq)
+                     |
+              +------+------+
+              |             |
+           SIMPLE        COMPLEX
+              |             |
+              v             v
+        Qwen / Groq     Gemini Flash
+              |             |
+              +------+------+
+                     |
+                     v
+              Budget Check
+                     |
+                     v
+             Answer + Sources
+                     |
+                     v
+               CSV Logging
+                     |
+                     v
+            Monitoring Dashboard
 ```
 
-### Why this shape, and not something more complex?
-This is a **linear pipeline**, not an agent framework, not a multi-service
-architecture, not a database-backed system. That's a deliberate choice: every
-piece is independently understandable and testable, matching the actual scope of
-the problem (single-user, small document corpus, demo-scale traffic). See
-"Future Improvements" for what would change at real production scale.
 
 ## 4. Tech Stack
 
-| Piece | Choice | Why |
-|---|---|---|
-| UI | Streamlit | No separate frontend needed; whole app stays in Python |
-| Orchestration | LangChain | Standard loaders/splitters/prompt templates; avoids reinventing well-trodden plumbing |
-| Embeddings | Local `sentence-transformers/all-MiniLM-L6-v2` (HuggingFace) | Runs on CPU, no API key, no rate limits, $0 forever |
-| Vector store | Chroma | Local, persistent, zero external infra, realistic ANN-index pattern |
-| Cheap LLM | Groq `llama-3.1-8b-instant` | Free tier, no credit card, extremely fast inference |
-| Strong LLM | Google Gemini `gemini-flash-latest` | Free tier, stronger reasoning than the 8B model |
-| Logging | CSV + pandas | Human-readable, zero setup, sufficient for single-user demo scale |
-| Evaluation | Custom keyword/source-matching harness | Deterministic, free, fast — no LLM-as-judge complexity needed for fixed-fact support docs |
+| Technology      | Purpose                              |
+| --------------- | ------------------------------------ |
+| 🐍 Python       | Core application                     |
+| ⚡ Streamlit     | Web interface                        |
+| 🦜 LangChain    | LLM/RAG orchestration                |
+| 🤗 HuggingFace  | Local embeddings                     |
+| 🗄️ Chroma      | Vector database                      |
+| ⚡ Groq          | Fast LLM inference and query routing |
+| ✨ Google Gemini | Stronger model for complex queries   |
+| 🐼 Pandas       | Logging and evaluation analysis      |
 
-**Total cost to build, run, and demo this project: $0.** Both LLM providers offer
-free API keys with no credit card, and the embedding model runs locally. Free
-tiers ARE rate-limited (requests/minute, tokens/day per provider) — fine for
-development and live demos, not intended as a production backend at scale.
+<p align="left"> <img src="https://cdn.simpleicons.org/python" width="40" alt="Python"/> <img src="https://cdn.simpleicons.org/streamlit" width="40" alt="Streamlit"/> <img src="https://cdn.simpleicons.org/langchain" width="40" alt="LangChain"/> <img src="https://cdn.simpleicons.org/huggingface" width="40" alt="HuggingFace"/> <img src="https://cdn.simpleicons.org/google" width="40" alt="Google"/> <img src="https://cdn.simpleicons.org/pandas" width="40" alt="Pandas"/> </p>
 
-## 5. RAG Pipeline (Features 1 & 2)
 
-`Document → Load (rag/loader.py) → Split into ~500-char overlapping chunks
-(rag/splitter.py) → Embed + store in Chroma (rag/embeddings.py) → Similarity
-search top-k (rag/retriever.py) → Prompt with retrieved context
-(rag/generator.py) → LLM → Answer + Sources`
+## RAG Pipeline (Features 1 & 2)
+
+`Document → Document Loader → Text Splitter i → Embed →Chroma Vector Store → Similarity Retrieval → Context + Question→ Select  LLM → Answer + Sources`
 
 The prompt explicitly instructs the model to answer **only** from the supplied
-context and to say so plainly when the answer isn't present — directly targeting
+context and to say so plainly when the answer isn't present directly targeting
 hallucination. Retrieved chunks are always shown in the UI (never hidden) so
 retrieval quality is inspectable, not a black box.
+The system uses sentence-transformers/all-MiniLM-L6-v2 to generate embeddings locally, avoiding an external embedding API.
 
-## 6. Model Routing Strategy (Feature 3)
+## 🟡 Intelligent Model Routing
 
-`routing/model_router.py` uses three rule-based signals to decide cheap vs. strong:
-1. Presence of complex-reasoning keywords (compare, why, explain, summarize, ...)
-2. Question length (long questions tend to be multi-part)
-3. Number of distinct topics mentioned (spanning multiple documents likely needs
-   synthesis, not lookup)
+A lightweight Qwen model running through Groq acts as the query router.
 
-Why rule-based instead of an ML classifier or an LLM-based router? No labeled
-training data exists at this scale, and using an LLM call just to decide *which*
-LLM to use would add cost and latency to every request — defeating the purpose.
-The routing decision (model + human-readable reason) is always shown in the UI.
+### SIMPLE
 
-## 7. Cost & Latency Tracking (Feature 4)
+Direct single fact questions that can usually be answered from one piece of information.
 
-Every request logs: timestamp, question, model, input/output tokens (from the
-**real** provider API response, not estimated), cost, latency, and success/failure
-to `request_log.csv`. The dashboard aggregates: total queries, total/average cost,
-average latency, cheap vs. strong model usage %, and cost/latency broken down by
-model.
+Examples:
 
-**Important honesty note**: since both Groq and Gemini are used on their free
-tiers, the *actual* dollar amount billed is always $0. The "cost" figures shown
-are a **simulation**, computed by applying each provider's published paid-tier
-per-token rate to the real token counts each free-tier call actually used. This
-keeps the cost-awareness architecture meaningful to demonstrate — the same
-routing, budget-check, and logging code would produce real billing numbers with
-zero changes on day one of switching to a paid plan.
+> How many days do I have to return an item?
+>
+> What is your email address?
+>
+> What are your store hours?
 
-## 8. Budget Control (Feature 5)
+### COMPLEX
 
-`monitoring/cost_tracker.py`'s `BudgetTracker` estimates the cost of a planned
-call *before* making it (using a rough token estimate, since real output length
-isn't known until generation finishes). If the strong model would exceed the
-remaining session budget, the request is **transparently downgraded** to the
-cheap model rather than blocked outright — a graceful-degradation pattern, with
-the downgrade always disclosed in the UI.
+Questions requiring comparison, multiple facts, reasoning, synthesis, or recommendations.
 
-## 9. Evaluation Methodology (Feature 6)
+Examples:
 
-`evaluation/test_cases.json` contains 25 hand-written questions across 6
-categories: normal lookups, multi-context questions, ambiguous questions,
-questions with no answer in the documents, deliberate hallucination traps, and
-edge cases (empty/gibberish input). `evaluation/evaluate.py` runs every case
-through the **actual production pipeline** (not a separate mock) and scores:
-- **Pipeline success rate** — did the request complete without crashing?
-- **Keyword answer accuracy** — does the answer contain an expected fact/phrase?
-- **Source retrieval accuracy** — did retrieval pull the expected document?
+> Compare standard and express shipping.
+>
+> If my return is approved, when will I get my refund and is shipping refundable?
+>
+> Which shipping option is better for me?
 
-Keyword/source matching was chosen over LLM-as-judge grading to keep evaluation
-free, deterministic, and simple to reason about, given this project's fixed-fact
-domain — an explicit and honest scope tradeoff.
+The router then selects the appropriate generation model.
 
-## 10. Results
+## ◈ Cost & Budget Control
 
-*(Run the Evaluation tab after uploading the sample docs in `data/sample_docs/`
-and paste your actual numbers here before sharing this repo — e.g.:)*
+The application records:
 
+- Input tokens
+- Output tokens
+- Estimated cost
+- Latency
+- Selected model
+- Routing decision
+- Request success
+- Budget-based downgrades
+
+Before using the stronger model, the application checks the remaining session budget. If the estimated request would exceed the budget, it falls back to the cheaper model.
+
+Cost values are estimated using real token usage and configured model pricing.
+
+## ⌁ Evaluation
+
+The project includes 25 evaluation cases covering:
+
+- Normal factual queries
+- Multi-context questions
+- Ambiguous questions
+- Questions outside the knowledge base
+- Hallucination traps
+- Edge cases and gibberish input
+
+The evaluation pipeline measures:
+
+- **Pipeline Success Rate**
+- **Keyword Answer Accuracy**
+- **Source Retrieval Accuracy**
+
+The evaluation runs through the actual RAG pipeline rather than a separate mock system.
+
+## ⚒ Fixes & Improvements
+
+During evaluation and testing, several issues were identified and fixed:
+
+- Replaced the unavailable `llama-3.1-8b-instant` model with `qwen/qwen3.6-27b`.
+- Fixed Qwen router output parsing when responses contained `<think>` blocks.
+- Improved the RAG prompt to match facts by meaning instead of exact wording.
+- Fixed source evaluation mismatches by normalizing document metadata to filenames.
+- Added Streamlit Cloud secrets support for deployment.
+
+📁 Project Structure
 ```
-Pipeline success rate: 100%
-Keyword answer accuracy: XX% (over N applicable cases)
-Source retrieval accuracy: XX% (over N applicable cases)
+supportpilot-ai/
+│
+├── app.py
+├── requirements.txt
+├── .env.example
+├── README.md
+│
+├── data/
+│   └── sample_docs/
+│       ├── knowledge_base.txt
+│       ├── mini.txt
+│       ├── return_policy.txt
+│       └── shipping_policy.txt
+│
+├── rag/
+│   ├── embeddings.py
+│   ├── generator.py
+│   ├── loader.py
+│   ├── retriever.py
+│   └── splitter.py
+│
+├── routing/
+│   └── model_router.py
+│
+├── monitoring/
+│   ├── cost_tracker.py
+│   └── logger.py
+│
+└── evaluation/
+    ├── evaluate.py
+    └── test_cases.json
 ```
+    
+## 🜲 Future Scope
 
-## 11. Limitations
+- Hybrid keyword + semantic retrieval
+- Reranking retrieved documents
+- Conversation memory
+- Response caching
+- Provider fallback and improved reliability
+- PostgreSQL based production logging
+- Improved multi document knowledge base management
 
-- Single active knowledge base at a time (uploading new docs replaces the old
-  vector store rather than merging or supporting multiple collections).
-- Chunking uses a fixed character-based size, not semantic or token-based splitting.
-- Routing is rule-based on surface text features, not learned from labeled data.
-- CSV logging doesn't handle concurrent multi-user writes safely.
-- Pricing constants in `cost_tracker.py` are hardcoded and can go stale.
-- Cost figures are **simulated** (based on free-tier token usage × published paid
-  pricing), not real billing — see Section 7 for why this is an honest tradeoff.
-- Free-tier rate limits (requests/minute, tokens/day) mean this isn't suitable for
-  high-traffic production use without upgrading to paid provider plans.
-- Evaluation uses keyword matching, not nuanced semantic answer grading.
-- Local embedding model (all-MiniLM-L6-v2) is lower-capacity than large hosted
-  embedding APIs — fine for this narrow support-doc corpus, may need upgrading
-  for more nuanced or larger-scale document collections.
+## ⚙️ Setup
 
-## 12. Future Improvements
-
-- Reranking retrieved chunks before generation
-- Hybrid search (keyword + semantic)
-- Conversation memory across turns
-- Agent/tool-calling for actions beyond Q&A
-- A learned (ML-based) query router instead of rule-based
-- LLM-as-judge evaluation for nuanced answer quality
-- Response caching for repeated questions
-- Provider fallback (e.g. if Groq or Gemini is down/rate-limited, fall back to
-  another free provider like Cerebras or Together AI)
-- Real billing integration once/if moving off free tiers to paid usage
-- A real database instead of CSV logging for multi-user production use
-- Cloud deployment (this app currently targets local/single-instance use)
-
-## 13. How to Run Locally (macOS)
+### 1. Clone the repository
 
 ```bash
-# 1. Clone and enter the repo
-git clone <your-repo-url>
-cd supportpilot-ai
-
-# 2. Create and activate a virtual environment
+git clone https://github.com/ANJALICHAMOLI/supportpilot-cost-aware-rag.git
+cd supportpilot-cost-aware-rag
+```
+### 2. Create a virtual environment
+```
 python3 -m venv venv
 source venv/bin/activate
-
-# 3. Install dependencies
+```
+### 3. Install dependencies
+```
 pip install -r requirements.txt
+```
+### 4. Configure API keys
+```
+Create a .env file:
 
-# 4. Get your two FREE API keys (no credit card needed for either):
-#    - Groq:   https://console.groq.com/keys
-#    - Gemini: https://aistudio.google.com/apikey
+GROQ_API_KEY=your_groq_api_key
+GOOGLE_API_KEY=your_google_api_key
 
-# 5. Set up your keys
-cp .env.example .env
-# then open .env and paste both real keys
-
-# 6. Run the app
-streamlit run app.py
 ```
 
-The app opens at `http://localhost:8501`. First run will download the local
-embedding model (~80MB, one-time, then fully cached offline). Upload the sample
-docs in `data/sample_docs/` (or your own PDF/TXT/MD files) in the **Document
-Upload** tab, then ask questions in the **Support Copilot** tab.
+### 5. Run the application
+```
+streamlit run app.py
+
+```
+➣ Upload documents from: data/sample_docs/ and start asking questions.
+
+## ⟡ Project Highlights
+
+- Retrieval Augmented Generation with persistent vector storage
+- LLM based query routing
+- Cost aware model selection
+- Budget based graceful degradation
+- Local embedding inference
+- Request level observability
+- Automated RAG evaluation
+- Hallucination and edge case testing
+
 
 **Free tier rate limits to be aware of during a live demo**: both Groq and Gemini
 cap requests per minute on the free tier. If you hit a rate limit mid-demo, the
 app automatically retries a couple of times with a short delay (see
 `rag/generator.py`) — if it still fails, just wait ~30–60 seconds and try again.
 
-## 14. Live Demo
 
-*(Add your deployed Streamlit Community Cloud link here once deployed.)*
-
-## 15. One-Paragraph Interview Summary
-
-"I built a cost-aware RAG support copilot in Streamlit. Documents are chunked,
-embedded, and stored in a local Chroma vector store; questions are answered using
-only retrieved context, with sources always shown. A rule-based router sends
-simple questions to a cheap model and complex ones to a stronger model, with a
-budget guardrail that downgrades to the cheap model if a session spending limit
-would be exceeded. Every request is logged with real token counts, cost, and
-latency, visualized in a dashboard. I built a 25-case evaluation harness —
-including deliberate hallucination traps and unanswerable questions — that runs
-through the actual pipeline to give repeatable quality metrics instead of ad-hoc
-manual testing."
