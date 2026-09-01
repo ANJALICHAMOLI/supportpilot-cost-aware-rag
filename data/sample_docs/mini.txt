@@ -1,0 +1,6 @@
+STORE HOURS AND CONTACT
+ 
+We are open Monday to Friday, 9 AM to 5 PM.
+We are closed on Saturdays and Sundays.
+Contact us at test@example.com or call 555-0100.
+Our store is located in Springfield.

@@ -1,0 +1,17 @@
+.env
+
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+
+chroma_store/
+uploaded_docs/
+request_log.csv
+
+
+.DS_Store
+
+.vscode/
+.idea/

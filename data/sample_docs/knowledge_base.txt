@@ -1,0 +1,23 @@
+STORE SUPPORT KNOWLEDGE BASE
+
+STORE HOURS AND CONTACT
+We are open Monday to Friday, 9 AM to 5 PM.
+We are closed Saturday and Sunday.
+Contact us at test@example.com or call 555-0100.
+Our store is located in Springfield.
+
+RETURNS AND REFUNDS
+Customers can return an item within 30 days of purchase.
+Items must be unused and in their original packaging.
+After a return is approved, refunds are processed within 5 business days.
+Shipping fees are non-refundable.
+
+SHIPPING
+Standard shipping costs $5 and usually takes 3 to 5 business days.
+Express shipping costs $15 and usually takes 1 to 2 business days.
+Orders are normally processed within 2 business days.
+
+WARRANTY
+Electronics include a 12-month warranty covering manufacturing defects.
+The warranty does not cover accidental damage or normal wear and tear.
+For warranty claims, contact support with your order number and a description of the problem.

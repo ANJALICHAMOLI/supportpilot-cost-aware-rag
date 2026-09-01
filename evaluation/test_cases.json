@@ -1,0 +1,211 @@
+[
+  {
+    "id": 1,
+    "type": "normal",
+    "question": "How many days do I have to return an item?",
+    "expected_keywords": ["30 days"],
+    "expected_source": "return_policy.txt",
+    "should_be_answerable": true
+  },
+  {
+    "id": 2,
+    "type": "normal",
+    "question": "What is the phone number for support?",
+    "expected_keywords": ["+1-800-555-0199"],
+    "expected_source": "return_policy.txt",
+    "should_be_answerable": true
+  },
+  {
+    "id": 3,
+    "type": "normal",
+    "question": "How much does standard shipping cost?",
+    "expected_keywords": ["4.99"],
+    "expected_source": "shipping_policy.txt",
+    "should_be_answerable": true
+  },
+  {
+    "id": 4,
+    "type": "normal",
+    "question": "Can I cancel my order after placing it?",
+    "expected_keywords": ["1 hour"],
+    "expected_source": "return_policy.txt",
+    "should_be_answerable": true
+  },
+  {
+    "id": 5,
+    "type": "normal",
+    "question": "How long is the warranty on electronics?",
+    "expected_keywords": ["1-year", "1 year"],
+    "expected_source": "return_policy.txt",
+    "should_be_answerable": true
+  },
+  {
+    "id": 6,
+    "type": "normal",
+    "question": "How long does order processing take before shipping?",
+    "expected_keywords": ["1-2 business days"],
+    "expected_source": "shipping_policy.txt",
+    "should_be_answerable": true
+  },
+  {
+    "id": 7,
+    "type": "multi_context",
+    "question": "If my order is both late AND arrives damaged, what should I do for each issue?",
+    "expected_keywords": ["48 hours", "carrier"],
+    "expected_source": null,
+    "should_be_answerable": true
+  },
+  {
+    "id": 8,
+    "type": "multi_context",
+    "question": "Compare the refund timeline after a return is approved versus how long a missing refund investigation takes.",
+    "expected_keywords": ["5-7 business days", "10 business days"],
+    "expected_source": null,
+    "should_be_answerable": true
+  },
+  {
+    "id": 9,
+    "type": "multi_context",
+    "question": "What are all the shipping speed options and their costs?",
+    "expected_keywords": ["4.99", "12.99", "24.99"],
+    "expected_source": "shipping_policy.txt",
+    "should_be_answerable": true
+  },
+  {
+    "id": 10,
+    "type": "ambiguous",
+    "question": "How long does it take?",
+    "expected_keywords": [],
+    "expected_source": null,
+    "should_be_answerable": false,
+    "notes": "Ambiguous - 'it' could refer to shipping, refunds, or processing. A good system should either ask for clarification or hedge rather than confidently pick one."
+  },
+  {
+    "id": 11,
+    "type": "ambiguous",
+    "question": "Is it free?",
+    "expected_keywords": [],
+    "expected_source": null,
+    "should_be_answerable": false,
+    "notes": "Ambiguous - unclear what 'it' refers to (shipping? returns? exchanges?)."
+  },
+  {
+    "id": 12,
+    "type": "not_in_documents",
+    "question": "Do you offer a student discount?",
+    "expected_keywords": ["don't have information"],
+    "expected_source": null,
+    "should_be_answerable": false
+  },
+  {
+    "id": 13,
+    "type": "not_in_documents",
+    "question": "What is your company's CEO's name?",
+    "expected_keywords": ["don't have information"],
+    "expected_source": null,
+    "should_be_answerable": false
+  },
+  {
+    "id": 14,
+    "type": "not_in_documents",
+    "question": "Do you have a physical retail store I can visit?",
+    "expected_keywords": ["don't have information"],
+    "expected_source": null,
+    "should_be_answerable": false
+  },
+  {
+    "id": 15,
+    "type": "hallucination_trap",
+    "question": "What is the exact refund percentage I get back if I return a Final Sale item?",
+    "expected_keywords": ["don't have information", "cannot be returned", "non-returnable"],
+    "expected_source": "return_policy.txt",
+    "should_be_answerable": false,
+    "notes": "Trap: Final Sale items are explicitly non-returnable, so there IS NO refund percentage. A hallucinating model might invent a percentage instead of saying returns aren't allowed."
+  },
+  {
+    "id": 16,
+    "type": "hallucination_trap",
+    "question": "What discount code can I use to get free overnight shipping?",
+    "expected_keywords": ["don't have information"],
+    "expected_source": null,
+    "should_be_answerable": false,
+    "notes": "Trap: no discount codes exist anywhere in the documents. A hallucinating model might invent one (e.g. 'FREESHIP10')."
+  },
+  {
+    "id": 17,
+    "type": "hallucination_trap",
+    "question": "What is the customer support email response time SLA in hours?",
+    "expected_keywords": ["don't have information"],
+    "expected_source": null,
+    "should_be_answerable": false,
+    "notes": "Trap: documents mention an email address and phone hours, but never state a response-time SLA."
+  },
+  {
+    "id": 18,
+    "type": "edge_case",
+    "question": "",
+    "expected_keywords": [],
+    "expected_source": null,
+    "should_be_answerable": false,
+    "notes": "Edge case: empty question string. System should handle gracefully, not crash."
+  },
+  {
+    "id": 19,
+    "type": "edge_case",
+    "question": "return return return refund refund shipping shipping cancel cancel",
+    "expected_keywords": [],
+    "expected_source": null,
+    "should_be_answerable": false,
+    "notes": "Edge case: keyword-stuffed nonsense question with no real intent behind it."
+  },
+  {
+    "id": 20,
+    "type": "edge_case",
+    "question": "asdkjhaskjdh????",
+    "expected_keywords": ["don't have information"],
+    "expected_source": null,
+    "should_be_answerable": false,
+    "notes": "Edge case: gibberish input, unrelated to any document content."
+  },
+  {
+    "id": 21,
+    "type": "normal",
+    "question": "Are gift cards returnable?",
+    "expected_keywords": ["cannot be returned", "non-returnable", "no"],
+    "expected_source": "return_policy.txt",
+    "should_be_answerable": true
+  },
+  {
+    "id": 22,
+    "type": "normal",
+    "question": "How many countries do you ship to?",
+    "expected_keywords": ["40"],
+    "expected_source": "shipping_policy.txt",
+    "should_be_answerable": true
+  },
+  {
+    "id": 23,
+    "type": "multi_context",
+    "question": "If I need to change my shipping address after ordering, what is the time limit, and is it the same as the order cancellation time limit?",
+    "expected_keywords": ["1 hour"],
+    "expected_source": null,
+    "should_be_answerable": true
+  },
+  {
+    "id": 24,
+    "type": "normal",
+    "question": "Who pays for return shipping costs on international orders?",
+    "expected_keywords": ["customer", "international customers are responsible"],
+    "expected_source": "return_policy.txt",
+    "should_be_answerable": true
+  },
+  {
+    "id": 25,
+    "type": "hallucination_trap",
+    "question": "What happens to my warranty if I drop my phone in water?",
+    "expected_keywords": ["does not cover", "water damage"],
+    "expected_source": "return_policy.txt",
+    "should_be_answerable": true,
+    "notes": "Trap: a hallucinating model might say water damage IS covered, or invent a repair fee, instead of correctly stating it's excluded."
+  }
+]
