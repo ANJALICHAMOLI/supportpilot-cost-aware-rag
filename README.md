@@ -251,10 +251,3 @@ streamlit run app.py
 - Automated RAG evaluation
 - Hallucination and edge case testing
 
-
-**Free tier rate limits to be aware of during a live demo**: both Groq and Gemini
-cap requests per minute on the free tier. If you hit a rate limit mid-demo, the
-app automatically retries a couple of times with a short delay (see
-`rag/generator.py`) — if it still fails, just wait ~30–60 seconds and try again.
-
-
