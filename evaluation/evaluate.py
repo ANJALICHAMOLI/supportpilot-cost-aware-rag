@@ -7,28 +7,25 @@ from routing.model_router import route_question
 
 
 def load_test_cases(path: str = "evaluation/test_cases.json"):
-   
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
 def check_keyword_match(answer: str, expected_keywords: list[str]) -> bool:
-    
     if not expected_keywords:
-        return None  
+        return None 
     answer_lower = answer.lower()
     return any(kw.lower() in answer_lower for kw in expected_keywords)
 
 
 def check_source_match(sources: list[str], expected_source: str) -> bool:
-    
+
     if expected_source is None:
         return None  
     return expected_source in sources
 
 
 def run_evaluation(vector_store, test_cases_path: str = "evaluation/test_cases.json", k: int = 4):
-    
     test_cases = load_test_cases(test_cases_path)
     results = []
 
@@ -37,7 +34,6 @@ def run_evaluation(vector_store, test_cases_path: str = "evaluation/test_cases.j
         start_time = time.time()
 
         try:
-         
             routing_decision = route_question(question)
             model_name = routing_decision["model"]
 
@@ -51,7 +47,6 @@ def run_evaluation(vector_store, test_cases_path: str = "evaluation/test_cases.j
             success = True
             error_message = None
         except Exception as e:
-      
             gen_result = {"answer": "", "sources": [], "input_tokens": 0, "output_tokens": 0}
             success = False
             error_message = str(e)
@@ -81,7 +76,7 @@ def run_evaluation(vector_store, test_cases_path: str = "evaluation/test_cases.j
 
 
 def summarize_results(results: list[dict]) -> dict:
-   
+    
     total = len(results)
     successful_runs = sum(1 for r in results if r["success"])
 

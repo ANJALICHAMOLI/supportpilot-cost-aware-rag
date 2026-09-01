@@ -1,5 +1,4 @@
 
-
 import os
 import time
 import streamlit as st
@@ -15,9 +14,7 @@ from monitoring.cost_tracker import BudgetTracker, estimate_cost
 from monitoring.logger import log_request, load_logs
 from evaluation.evaluate import run_evaluation
 
-
 load_dotenv()
-
 for _env_key in ("GROQ_API_KEY", "GOOGLE_API_KEY"):
     if not os.getenv(_env_key):
         try:
@@ -27,9 +24,7 @@ for _env_key in ("GROQ_API_KEY", "GOOGLE_API_KEY"):
             pass
 
 
-# ---------------------------------------------------------------------------
 # SESSION STATE INITIALIZATION
-# ---------------------------------------------------------------------------
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []  # list of {question, answer, sources, model, ...}
@@ -44,15 +39,14 @@ if "vector_store" not in st.session_state:
 st.set_page_config(page_title="SupportPilot AI", layout="wide")
 st.title("🛠️ SupportPilot AI — Cost Aware RAG Support Copilot")
 
+
 tab_chat, tab_upload, tab_dashboard, tab_eval, tab_budget = st.tabs([
     "💬 Support Copilot", "📄 Document Upload", "📊 Cost & Usage Dashboard",
     "🧪 Evaluation", "💰 Budget Status",
 ])
 
 
-# ---------------------------------------------------------------------------
 # TAB: DOCUMENT UPLOAD  (Feature 1)
-# ---------------------------------------------------------------------------
 with tab_upload:
     st.header("Upload Support Documents")
     st.caption("Supported formats: PDF, TXT, Markdown")
@@ -91,9 +85,8 @@ with tab_upload:
         st.warning("No documents loaded yet. Upload files above to get started.")
 
 
-# ---------------------------------------------------------------------------
 # TAB: CHAT / SUPPORT COPILOT  (Features 2, 3, 5)
-# ---------------------------------------------------------------------------
+
 with tab_chat:
     st.header("Ask a Question")
 
@@ -105,11 +98,14 @@ with tab_chat:
         if st.button("Ask", disabled=not question):
             start_time = time.time()
 
+            
             chunks = retrieve_relevant_chunks(st.session_state.vector_store, question, k=4)
             context_preview = "\n".join(c.page_content for c in chunks)
 
+            # ROUTING
             routing_decision = route_question(question)
 
+            # STEP 3 - BUDGET CHECK
             budget_decision = st.session_state.budget_tracker.check_and_resolve_model(
                 requested_model=routing_decision["model"],
                 question=question,
@@ -117,6 +113,7 @@ with tab_chat:
             )
             final_model = budget_decision["final_model"]
 
+            # STEP 4 - GENERATION
             try:
                 gen_result = generate_answer(question, chunks, final_model)
                 success = True
@@ -125,6 +122,8 @@ with tab_chat:
                 success = False
 
             latency = time.time() - start_time
+
+            # STEP 5 - COST ACCOUNTING
             actual_cost = estimate_cost(final_model, gen_result["input_tokens"], gen_result["output_tokens"]) if success else 0.0
             st.session_state.budget_tracker.record_spend(actual_cost)
 
@@ -141,6 +140,7 @@ with tab_chat:
                 was_budget_downgraded=budget_decision["was_downgraded"],
             )
 
+
             st.session_state.chat_history.append({
                 "question": question,
                 "answer": gen_result["answer"],
@@ -153,12 +153,13 @@ with tab_chat:
                 "latency": latency,
             })
 
+        # Render chat history, most recent first.
         
         for turn in reversed(st.session_state.chat_history):
             st.markdown(f"**Q: {turn['question']}**")
             st.write(turn["answer"])
 
-           
+            # Feature 3 requirement
             downgrade_note = " 🔻 (downgraded due to budget limit)" if turn["was_downgraded"] else ""
             st.caption(
                 f"Model: `{turn['model']}`{downgrade_note} | "
@@ -166,7 +167,7 @@ with tab_chat:
                 f"Cost: ${turn['cost']:.6f} | Latency: {turn['latency']:.2f}s"
             )
 
-
+            # Feature 2 requirement
             with st.expander(f"📚 Retrieved sources ({len(turn['sources'])})"):
                 for i, chunk in enumerate(turn["chunks"]):
                     st.markdown(f"**Chunk {i+1}** — source: `{chunk.metadata.get('source', 'unknown')}`")
@@ -174,9 +175,9 @@ with tab_chat:
             st.divider()
 
 
-# ---------------------------------------------------------------------------
+
 # TAB: COST & USAGE DASHBOARD  (Feature 4)
-# ---------------------------------------------------------------------------
+
 with tab_dashboard:
     st.header("Cost & Usage Dashboard")
     logs_df = load_logs()
@@ -184,7 +185,6 @@ with tab_dashboard:
     if logs_df.empty:
         st.info("No requests logged yet. Ask a question in the Support Copilot tab first.")
     else:
-
         total_queries = len(logs_df)
         total_cost = logs_df["estimated_cost"].sum()
         avg_cost = logs_df["estimated_cost"].mean()
@@ -213,9 +213,9 @@ with tab_dashboard:
         st.dataframe(logs_df.sort_values("timestamp", ascending=False))
 
 
-# ---------------------------------------------------------------------------
+
 # TAB: EVALUATION  (Feature 6)
-# ---------------------------------------------------------------------------
+
 with tab_eval:
     st.header("Evaluation Harness")
     st.caption(
@@ -228,7 +228,7 @@ with tab_eval:
     if st.session_state.vector_store is None:
         st.warning("⚠️ Please upload and process documents first.")
     else:
-        if st.button("Run Evaluation"):
+        if st.button("ᛰ Run Evaluation"):
             with st.spinner("Running evaluation test cases through the RAG pipeline..."):
                 results, summary = run_evaluation(st.session_state.vector_store)
                 st.session_state.eval_results = results
@@ -249,19 +249,15 @@ with tab_eval:
                 help=f"Evaluated over {summary['source_cases_evaluated']} applicable cases",
             )
 
-            st.subheader("Per-Case Results")
+            st.subheader("Per Case Results")
             import pandas as pd
             results_df = pd.DataFrame(st.session_state.eval_results)
             st.dataframe(results_df)
 
 
-# ---------------------------------------------------------------------------
 # TAB: BUDGET STATUS  (Feature 5)
-# ---------------------------------------------------------------------------
 with tab_budget:
     st.header("Budget Status")
-
- 
     new_limit = st.number_input(
         "Session budget limit ($)",
         min_value=0.0,

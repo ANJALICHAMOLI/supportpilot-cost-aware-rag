@@ -1,5 +1,4 @@
-
-
+import pandas as pd
 import csv
 import os
 from datetime import datetime, timezone
@@ -14,7 +13,7 @@ LOG_COLUMNS = [
 
 
 def _ensure_log_file_exists():
-   
+
     if not os.path.exists(LOG_FILE_PATH):
         with open(LOG_FILE_PATH, mode="w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
@@ -32,7 +31,7 @@ def log_request(
     success: bool,
     was_budget_downgraded: bool = False,
 ):
-    
+   
     _ensure_log_file_exists()
 
     row = {
@@ -54,8 +53,6 @@ def log_request(
 
 
 def load_logs():
-    
-    import pandas as pd  
 
     if not os.path.exists(LOG_FILE_PATH):
         return pd.DataFrame(columns=LOG_COLUMNS)

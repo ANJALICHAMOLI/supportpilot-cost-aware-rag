@@ -1,6 +1,7 @@
+from routing.model_router import CHEAP_MODEL  
 
 MODEL_PRICING = {
-    "llama-3.1-8b-instant": {
+    "qwen/qwen3.6-27b": {
         "input_per_1k": 0.00005,
         "output_per_1k": 0.00008,
     },
@@ -12,9 +13,8 @@ MODEL_PRICING = {
 
 
 def estimate_cost(model_name: str, input_tokens: int, output_tokens: int) -> float:
-   
-    if model_name not in MODEL_PRICING:
 
+    if model_name not in MODEL_PRICING:
         raise ValueError(f"No pricing configured for model: {model_name}")
 
     pricing = MODEL_PRICING[model_name]
@@ -24,20 +24,17 @@ def estimate_cost(model_name: str, input_tokens: int, output_tokens: int) -> flo
 
 
 def estimate_cost_before_call(model_name: str, estimated_input_tokens: int, estimated_output_tokens: int = 300) -> float:
-    
     return estimate_cost(model_name, estimated_input_tokens, estimated_output_tokens)
 
 
 def rough_token_estimate(text: str) -> int:
-    
     return max(1, len(text) // 4)
 
 
 class BudgetTracker:
-    
 
     def __init__(self, budget_limit: float = 1.0):
- 
+
         self.budget_limit = budget_limit
         self.total_spent = 0.0
 
@@ -45,17 +42,13 @@ class BudgetTracker:
         return round(self.budget_limit - self.total_spent, 6)
 
     def record_spend(self, amount: float):
-        """Called AFTER a real LLM call completes, using its ACTUAL cost."""
         self.total_spent = round(self.total_spent + amount, 6)
 
     def check_and_resolve_model(self, requested_model: str, question: str, context_text: str) -> dict:
-        
-        from routing.model_router import CHEAP_MODEL  
 
         estimated_input_tokens = rough_token_estimate(question + context_text)
 
         if requested_model == CHEAP_MODEL:
-          
             est_cost = estimate_cost_before_call(requested_model, estimated_input_tokens)
             return {"final_model": requested_model, "was_downgraded": False, "estimated_cost": est_cost}
 

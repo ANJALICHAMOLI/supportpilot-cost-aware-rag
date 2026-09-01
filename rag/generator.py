@@ -1,5 +1,4 @@
 
-
 import time
 from langchain_groq import ChatGroq
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -27,7 +26,7 @@ RAG_PROMPT_TEMPLATE = ChatPromptTemplate.from_messages([
      "question, respond exactly with: "
      "\"I don't have information about that in the provided documents.\"\n\n"
      "Never invent or infer facts that are not explicitly present in the "
-     "context, even to fill in plausible-sounding details.\n\n"
+     "context, even to fill in plausible sounding details.\n\n"
      "Context:\n{context}"),
     ("human", "{question}"),
 ])
@@ -59,7 +58,6 @@ def _invoke_with_retry(llm, prompt_messages, max_retries: int = 2, backoff_secon
             return llm.invoke(prompt_messages)
         except Exception as e:
             last_error = e
-         
             error_text = str(e).lower()
             is_transient = any(
                 token in error_text
@@ -67,12 +65,11 @@ def _invoke_with_retry(llm, prompt_messages, max_retries: int = 2, backoff_secon
             )
             if not is_transient or attempt == max_retries:
                 raise
-            time.sleep(backoff_seconds * (attempt + 1))  # simple linear backoff
-    raise last_error  # pragma: no cover - unreachable in practice
+            time.sleep(backoff_seconds * (attempt + 1))  
+    raise last_error 
 
 
 def generate_answer(question: str, chunks, model_name: str):
-    
     context_text = format_context(chunks)
     llm = get_llm(model_name)
 
@@ -83,6 +80,7 @@ def generate_answer(question: str, chunks, model_name: str):
 
     response = _invoke_with_retry(llm, prompt_messages)
 
+ 
     usage = response.usage_metadata or {}
     input_tokens = usage.get("input_tokens", 0)
     output_tokens = usage.get("output_tokens", 0)
