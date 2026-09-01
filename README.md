@@ -76,7 +76,7 @@ A cost-aware customer support AI application built with RAG, intelligent LLM rou
 <p align="left"> <img src="https://cdn.simpleicons.org/python" width="40" alt="Python"/> <img src="https://cdn.simpleicons.org/streamlit" width="40" alt="Streamlit"/> <img src="https://cdn.simpleicons.org/langchain" width="40" alt="LangChain"/> <img src="https://cdn.simpleicons.org/huggingface" width="40" alt="HuggingFace"/> <img src="https://cdn.simpleicons.org/google" width="40" alt="Google"/> <img src="https://cdn.simpleicons.org/pandas" width="40" alt="Pandas"/> </p>
 
 
-## RAG Pipeline (Features 1 & 2)
+## RAG Pipeline 
 
 `Document → Document Loader → Text Splitter i → Embed →Chroma Vector Store → Similarity Retrieval → Context + Question→ Select  LLM → Answer + Sources`
 
